@@ -1,55 +1,14 @@
+from typing import ClassVar
+
 from django import forms
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 
 from contact.models import Contact
 
 
 class ContactForm(forms.ModelForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    picture= forms.ImageField(
-        widget=forms.FileInput(
-            attrs={
-                'accept':'image/*',
-            }
-        )
-    )
-
-    first_name = forms.CharField(
-        widget=forms.TextInput(
-            attrs={
-                "placeholder": "Digite aqui",
-            }
-        ),
-        label="Primeiro nome",
-    )
-    last_name = forms.CharField(
-        widget=forms.TextInput(
-            attrs={
-                "placeholder": "Digite aqui",
-            }
-        ),
-        label="sobrenome",
-    )
-
-    phone = forms.CharField(
-        widget=forms.TextInput(
-            attrs={
-                "placeholder": "Digite seu número aqui",
-            }
-        ),
-        label="telefone",
-    )
-
-    email = forms.CharField(
-        widget=forms.TextInput(
-            attrs={
-                "placeholder": "coloque seu Email aqui",
-            }
-        ),
-    )
-
     class Meta:
         model = Contact
         fields = (
@@ -61,6 +20,33 @@ class ContactForm(forms.ModelForm):
             "category",
             "picture",
         )
+        widgets: ClassVar = {
+            "first_name": forms.TextInput(
+                attrs={
+                    "placeholder": "Digite aqui",
+                }
+            ),
+            "last_name": forms.TextInput(
+                attrs={
+                    "placeholder": "Digite aqui",
+                }
+            ),
+            "phone": forms.TextInput(
+                attrs={
+                    "placeholder": "Digite seu número aqui",
+                }
+            ),
+            "email": forms.EmailInput(
+                attrs={
+                    "placeholder": "Coloque seu e-mail aqui",
+                }
+            ),
+            "picture": forms.FileInput(
+                attrs={
+                    "accept": "image/*",
+                }
+            ),
+        }
 
     def clean(self):
         cleaned_data = super().clean()
@@ -118,3 +104,37 @@ class ContactForm(forms.ModelForm):
             )
 
         return phone
+
+
+class Registerform(UserCreationForm):
+    first_name = forms.CharField(
+        required=True,
+        min_length=3,
+    )
+
+    last_name = forms.CharField(
+        required=True,
+        min_length=3,
+    )
+
+    email = forms.EmailField()
+
+    class Meta:
+        model = User
+        fields = (
+            "first_name",
+            "last_name",
+            "email",
+            "username",
+            "password1",
+            "password2",
+        )
+
+    def clean_email(self):
+        email = self.cleaned_data.get("email")
+        if User.objects.filter(email=email).exists():
+            self.add_error(
+                "email", ValidationError("já existe este e-mail", code="invalid")
+            )
+
+        return email
