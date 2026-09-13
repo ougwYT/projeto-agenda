@@ -1,0 +1,81 @@
+###############################################################################
+# Replace
+#agenda the name of the gunicorn file you want
+# spinolasena2006
+ your user name
+# agendaapp the folder name of your project
+# project the folder name where you find a file called wsgi.py
+#
+###############################################################################
+# Criando o arquivoagenda.socket
+sudo nano /etc/systemd/system/agenda.socket
+
+###############################################################################
+# Conteúdo do arquivo
+[Unit]
+Description=gunicornagenda socket
+
+[Socket]
+ListenStream=/run/agenda.socket
+
+[Install]
+WantedBy=sockets.target
+
+###############################################################################
+# Criando o arquivoagenda.service
+sudo nano /etc/systemd/system/agenda.service
+
+###############################################################################
+# Conteúdo do arquivo
+[Unit]
+Description=Gunicorn daemon (You can change if you want)
+Requires=agenda.socket
+After=network.target
+
+[Service]
+User=spinolasena2006
+
+Group=www-data
+Restart=on-failure
+# EnvironmentFile=/home/spinolasena2006
+/agendaapp/.env
+WorkingDirectory=/home/spinolasena2006
+/agendaapp
+# --error-logfile --enable-stdio-inheritance --log-level and --capture-output
+# are all for debugging purposes.
+ExecStart=/home/spinolasena2006
+/agendaapp/venv/bin/gunicorn \
+          --error-logfile /home/spinolasena2006
+/agendaapp/gunicorn-error-log \
+          --enable-stdio-inheritance \
+          --log-level "debug" \
+          --capture-output \
+          --access-logfile - \
+          --workers 6 \
+          --bind unix:/run/agenda.socket \
+          project.wsgi:application
+
+[Install]
+WantedBy=multi-user.target
+
+###############################################################################
+# Ativando
+sudo systemctl startagenda.socket
+sudo systemctl enableagenda.socket
+
+# Checando
+sudo systemctl statusagenda.socket
+curl --unix-socket /run/agenda.socket localhost
+sudo systemctl status agenda
+
+# Restarting
+sudo systemctl restartagenda.service
+sudo systemctl restartagenda.socket
+sudo systemctl restartagenda
+
+# After changing something
+sudo systemctl daemon-reload
+
+# Debugging
+sudo journalctl -uagenda.service
+sudo journalctl -uagenda.socket
